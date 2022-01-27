@@ -1,5 +1,8 @@
 export interface PrivyMessage {
-    from : string // user identity of sender
-    content : string // content of message, plaintext
-    timestamp : string // ISO date-time string
+  from: string; // public key of sender, encrypted
+  content: string; // content of message, encrypted
+  timestamp: string; // ISO date-time string, encrypted
+  nonce: string;
+  signature: string;
+  hash?: string;
 }

@@ -6,10 +6,7 @@ import {
   getWriteKey,
   verifyAddress,
 } from "../repo/connectionManager";
-import {
-  getPublicKeyString,
-  getUserAddress,
-} from "../service/identityService";
+import { getPublicKeyString, getUserAddress } from "../service/identityService";
 import { publishToTopic, subscribeToTopic } from "../service/ipfsService";
 import { Message } from "ipfs-core-types/src/pubsub";
 import {
@@ -25,11 +22,15 @@ import {
 } from "../util/crypto";
 import { PrivyError } from "../model/errors";
 
-export const fetchMessageRepoAddrAndClone = async (callback: (err? : PrivyError) => void) => {
+export const fetchMessageRepoAddrAndClone = async (
+  callback: (err?: PrivyError) => void
+) => {
   await fetchRepoAndClone("MESSAGES", callback, cloneMessageRepo);
 };
 
-export const fetchContactRepoAddrAndClone = async (callback: (err? : PrivyError) => void) => {
+export const fetchContactRepoAddrAndClone = async (
+  callback: (err?: PrivyError) => void
+) => {
   await fetchRepoAndClone("CONTACTS", callback, cloneContactRepo);
 };
 
@@ -44,8 +45,12 @@ const fetchRepoAndClone = async (
     const body = JSON.parse(msg.data.toString()) as CloneRequestResponse;
     if (body.status === "accepted") {
       const response = body as CloneRequestResponseSuccess;
-      const verified = verifySignature(response.nonce, response.signature, response.pubkey);
-      
+      const verified = verifySignature(
+        response.nonce,
+        response.signature,
+        response.pubkey
+      );
+
       if (!verified) {
         callback(PrivyError.INVALID_SIGNATURE);
       }

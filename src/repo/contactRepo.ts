@@ -35,11 +35,20 @@ export const deleteContact = async (alias: string) => {
   return await repo.del(hash);
 };
 
-export const findContactByAddress = async (addr : string) => {
+export const findContactByAddress = async (addr: string) => {
   const repo = getContactRepo();
-  const result = await repo.query((contact : any) => contact.address == addr)
+  const result = await repo.query((contact: any) => contact.address == addr);
   if (result.length < 1) {
     return null;
   }
   return result[0] as PrivyContact;
-}
+};
+
+export const findContactByPublicKey = async (pubkey: string) => {
+  const repo = getContactRepo();
+  const result = await repo.query((contact: any) => contact.pubkey == pubkey);
+  if (result.length < 1) {
+    return null;
+  }
+  return result[0] as PrivyContact;
+};

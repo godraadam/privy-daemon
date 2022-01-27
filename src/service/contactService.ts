@@ -1,14 +1,23 @@
 import { PrivyContact } from "../model/contactModel";
-import { ProxyRequest, ProxyRequestResponse, ProxyRequestResponseSuccess } from "../model/requestModel";
+import {
+  ProxyRequest,
+  ProxyRequestResponse,
+  ProxyRequestResponseSuccess,
+} from "../model/requestModel";
 import {
   deleteContact,
   findAllContacts,
   findContactByAddress,
   findContactByAlias,
+  findContactByPublicKey,
   saveContact,
 } from "../repo/contactRepo";
-import { encryptMessage, generateNonce, sha256, signMessage, verifySignature } from "../util/crypto";
-import { getContactRepoAddress, getMessageRepoAddress } from "./addressService";
+import {
+  generateNonce,
+  sha256,
+  signMessage,
+  verifySignature,
+} from "../util/crypto";
 import { getPublicKeyString } from "./identityService";
 import { publishToTopic, subscribeToTopic } from "./ipfsService";
 import { Message } from "ipfs-core-types/src/pubsub";
@@ -35,8 +44,16 @@ export const getAllContacts = async () => {
 };
 
 export const getContactByAddress = async (addr: string) => {
-  return findContactByAddress(addr);
+  return await findContactByAddress(addr);
 };
+
+export const getContactByPublicKey = async (pubkey: string) => {
+  return await findContactByPublicKey(pubkey);
+};
+
+export const isAddressContact = async (addr : string) => {
+  return !!(await findContactByAddress(addr));
+}
 
 export const contactSetTrusted = async (alias: string, trusted: boolean) => {
   const contact = await getContactByAlias(alias);
@@ -55,37 +72,42 @@ export const isAddressTrusted = async (addr: string) => {
   return contact.trusted;
 };
 
-export const getAddressFromPubKey = (pubkey : string) => sha256(pubkey);
+export const getAddressFromPubKey = (pubkey: string) => sha256(pubkey);
 
-export const addProxy = async (contact : PrivyContact, callback : (err? : PrivyError) => void) => {
+export const addProxy = async (
+  contact: PrivyContact,
+  callback: (err?: PrivyError) => void
+) => {
   const nonce = generateNonce();
-  
-  const handleResponse = async (msg : Message) => {
+
+  const handleResponse = async (msg: Message) => {
     const body = JSON.parse(msg.data.toString()) as ProxyRequestResponse;
-    if(body.status === 'rejected') {
-      callback( PrivyError.REQUEST_REJECTED);
+    
+    if (body.status === "rejected") {
+      callback(PrivyError.REQUEST_REJECTED);
     }
+    
     const resp = body as ProxyRequestResponseSuccess;
+
     const verified = verifySignature(resp.nonce, resp.signature, resp.pubkey);
     if (!verified) {
-      callback(PrivyError.INVALID_SIGNATURE); 
+      callback(PrivyError.INVALID_SIGNATURE);
     }
-    const trusted = isAddressTrusted(getAddressFromPubKey(resp.pubkey));
-    if (!trusted) {
-      callback(PrivyError.NOT_TRUSTED);
-    }
-  }
-  
-  
-  const request : ProxyRequest = {
-    pubkey:getPublicKeyString(),
-    nonce:nonce,
-    signature:signMessage(nonce),
-    addrs:[getContactRepoAddress(), getMessageRepoAddress()].map(addr => encryptMessage(addr, contact.pubkey))
-  }
-  
+    console.log(`${contact.alias} accepted your proxy reuest`);
+    callback();
+  };
+
+  const request: ProxyRequest = {
+    pubkey: getPublicKeyString(),
+    nonce: nonce,
+    signature: signMessage(nonce),
+  };
+
   // sub to response channel
   await subscribeToTopic(nonce, handleResponse);
-  
-  await publishToTopic(contact.address + '/request/proxy', JSON.stringify(request));
-}
+
+  await publishToTopic(
+    contact.address + "/request/proxy",
+    JSON.stringify(request)
+  );
+};
