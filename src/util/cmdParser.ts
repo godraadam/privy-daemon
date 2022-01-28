@@ -27,6 +27,12 @@ export const parseCommandLine = async () =>
         describe: "The public key of the proxied user. Only when starting as a proxy node",
         type:"string"
     })
+    .option("repo", {
+        alias: "r",
+        describe: "Path to IPFS repo",
+        demandOption:true,
+        type:"string"
+    })
     .help()
     .version()
     .parse();

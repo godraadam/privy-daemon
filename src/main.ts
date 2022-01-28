@@ -8,6 +8,7 @@ import {
 } from "./repo/connectionManager";
 import {
   generateIdentity,
+  generateProxyIdentity,
   getPublicKeyString,
   getUserAddress,
 } from "./service/identityService";
@@ -25,7 +26,11 @@ import { parseCommandLine } from "./util/cmdParser";
 import {betterLogging, expressMiddleware as logger} from 'better-logging'
 import chalk from 'chalk'
 
-betterLogging(console);
+betterLogging(console, {
+  logLevels :{
+    debug: 0
+  }
+});
 console.logLevel = 2;
 
 const main = async () => {
@@ -45,7 +50,7 @@ const main = async () => {
   
   // startup internal ipfs node
   console.info("Starting IPFS node...");
-  await initIpfs();
+  await initIpfs(args.repo);
   console.info(`IPFS succesfully started with node id ${await getIPFSNodeId()}`);
 
   // initialize orbitdb instance
@@ -111,8 +116,32 @@ const main = async () => {
       });
       break;
     case "proxy":
-      console.error("Not yet implemented!");
-      process.exit(1);
+      if (!args.pubkey) {
+        console.error(`Public key is required for ${args.type} type!`);
+        process.exit(1);
+      }
+      // generate data necessary for proxying
+      generateProxyIdentity(args.pubkey);
+      
+      // clone repos
+      await fetchMessageRepoAddrAndClone(async (err?: PrivyError) => {
+        if (err) {
+          console.error(
+            `Failed to clone message repo! Error is ${err.toString()}. Exiting...`
+          );
+          process.exit(1);
+        }
+        await fetchContactRepoAddrAndClone((err?: PrivyError) => {
+          if (err) {
+            console.error(
+              `Failed to clone contacts repo! Error is ${err.toString()}. Exiting...`
+            );
+            process.exit(1);
+          }
+          _subscribeToTopics(getUserAddress());
+        });
+      });
+      break;
     default:
       console.error("Invalid node type!");
       process.exit(1);

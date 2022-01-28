@@ -15,26 +15,37 @@ const _sharedKey = "PrivyIsAwesome";
 const _sharedUser = "PrivyUser";
 let _sharedRsaKey: RSAKey;
 let _sharedPublicKeyString: string;
+const _keylen = 64;
 
 export const generateIdentity = async (
   passphrase: string,
   username: string
 ) => {
-  const keylen = 64;
   const seed = crypto
-    .scryptSync(passphrase, username, keylen)
+    .scryptSync(passphrase, username, _keylen)
     .toString("base64");
   _username = username;
   _rsakey = cryptico.generateRSAKey(seed, 1024);
   _publicKeyString = cryptico.publicKeyString(_rsakey);
   _userAddress = deriveAddressFromPublicKey(_publicKeyString)
+  
+  _generateSharedKeys()
+};
 
+const _generateSharedKeys = () => {
   const sharedSeed = crypto
-    .scryptSync(_sharedKey, _sharedUser, keylen)
+    .scryptSync(_sharedKey, _sharedUser, _keylen)
     .toString("base64");
   _sharedRsaKey = cryptico.generateRSAKey(sharedSeed, 1024);
   _sharedPublicKeyString = cryptico.publicKeyString(_sharedRsaKey);
-};
+}
+
+// this function should only ever be called on proxy nodes
+export const generateProxyIdentity = (pubkey: string) => {
+  _userAddress = deriveAddressFromPublicKey(pubkey)
+  _publicKeyString = pubkey;
+  _generateSharedKeys()
+}
 
 export const getUserAddress = () => _userAddress;
 

@@ -7,4 +7,4 @@ export const apiRouter = Router();
 
 apiRouter.use("/msg", messageRouter);
 apiRouter.use("/contact", contactRouter);
-apiRouter.use("/control", accountRouter);
+apiRouter.use("/account", accountRouter);

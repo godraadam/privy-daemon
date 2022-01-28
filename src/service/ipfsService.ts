@@ -3,9 +3,8 @@ import { MessageHandlerFn } from "ipfs-core-types/src/pubsub";
 
 let _ipfs: IPFS | null = null;
 
-export const initIpfs = async () => {
+export const initIpfs = async (repo: string) => {
   if (!_ipfs) {
-    const repo = process.env.IPFS_REPO;
     _ipfs = await create({
       repo: repo,
       relay: {
@@ -14,6 +13,7 @@ export const initIpfs = async () => {
           enabled: false,
         },
       },
+      
     });
   }
 };
