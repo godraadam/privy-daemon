@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { StatusCodes } from "http-status-codes";
-import { PrivyContact } from "../../model/contactModel";
+import { PrivyContact, PrivyContactCreate } from "../../model/contactModel";
+import { deriveAddressFromPublicKey } from "../../service/addressService";
 import {
   addContact,
   contactSetTrusted,
@@ -12,8 +13,13 @@ import {
 export const contactRouter = Router();
 
 contactRouter.post("/add", async (req, res) => {
-  //TODO: remove address field from body
-  const contact = req.body as PrivyContact;
+  const payload = req.body as PrivyContactCreate;
+  const contact: PrivyContact = {
+      alias: payload.alias,
+      pubkey: payload.pubkey,
+      trusted: payload.trusted ?? false,
+      address: deriveAddressFromPublicKey(payload.pubkey)
+  }
   await addContact(contact);
   res.status(StatusCodes.OK).send();
 });

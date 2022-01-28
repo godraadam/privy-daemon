@@ -1,20 +1,20 @@
 import { cryptico, RSAKey } from "@daotl/cryptico";
 import crypto from "crypto";
-import { sha256 } from "../util/crypto";
+import { deriveAddressFromPublicKey } from "./addressService";
 import { getContactByAlias } from "./contactService";
 
-let userAddress: string;
+let _userAddress: string;
 let _username: string;
-let rsakey: RSAKey;
-let publicKeyString: string;
+let _rsakey: RSAKey;
+let _publicKeyString: string;
 
 // Each node will have this 'shared' private key as well
-// This is because the Cryptico does not support signing only
+// This is because the Cryptico module does not support signing only
 // Therefore when only have to sign but not encrypt, this shared key will be used
-const sharedKey = "PrivyIsAwesome";
-const sharedUser = "user";
-let sharedRsaKey: RSAKey;
-let sharedPublicKeyString: string;
+const _sharedKey = "PrivyIsAwesome";
+const _sharedUser = "PrivyUser";
+let _sharedRsaKey: RSAKey;
+let _sharedPublicKeyString: string;
 
 export const generateIdentity = async (
   passphrase: string,
@@ -25,26 +25,28 @@ export const generateIdentity = async (
     .scryptSync(passphrase, username, keylen)
     .toString("base64");
   _username = username;
-  rsakey = cryptico.generateRSAKey(seed, 1024);
-  publicKeyString = cryptico.publicKeyString(rsakey);
-  userAddress = "privy/" + sha256(publicKeyString);
+  _rsakey = cryptico.generateRSAKey(seed, 1024);
+  _publicKeyString = cryptico.publicKeyString(_rsakey);
+  _userAddress = deriveAddressFromPublicKey(_publicKeyString)
 
   const sharedSeed = crypto
-    .scryptSync(sharedKey, sharedUser, keylen)
+    .scryptSync(_sharedKey, _sharedUser, keylen)
     .toString("base64");
-  sharedRsaKey = cryptico.generateRSAKey(sharedSeed, 1024);
-  sharedPublicKeyString = cryptico.publicKeyString(sharedRsaKey);
+  _sharedRsaKey = cryptico.generateRSAKey(sharedSeed, 1024);
+  _sharedPublicKeyString = cryptico.publicKeyString(_sharedRsaKey);
 };
 
-export const getUserAddress = () => userAddress;
+export const getUserAddress = () => _userAddress;
 
-export const getRSAKey = () => rsakey;
+export const getRSAKey = () => _rsakey;
 
-export const getPublicKeyString = () => publicKeyString;
+export const getPublicKeyString = () => _publicKeyString;
 
-export const getSharedRSAKey = () => sharedRsaKey;
+export const getSharedRSAKey = () => _sharedRsaKey;
 
-export const getSharedPublicKeyString = () => sharedPublicKeyString;
+export const getSharedPublicKeyString = () => _sharedPublicKeyString;
+
+export const getUsername = () => _username
 
 export const getSelf = async () => {
   return await getContactByAlias(_username);

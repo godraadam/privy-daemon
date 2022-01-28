@@ -7,10 +7,7 @@ import {
   ResponseRejected,
 } from "../../model/requestModel";
 import { getContactRepo, getMessageRepo } from "../../repo/connectionManager";
-import {
-  getAddressFromPubKey,
-  isAddressTrusted,
-} from "../../service/contactService";
+import { isPubKeyTrusted } from "../../service/contactService";
 import { getPublicKeyString } from "../../service/identityService";
 import { publishToTopic } from "../../service/ipfsService";
 import {
@@ -51,7 +48,7 @@ export const handleCloneRequest = async (msg: Message) => {
   }
 
   //verify that user with given public key is trusted
-  const trusted = await isAddressTrusted(getAddressFromPubKey(body.pubkey));
+  const trusted = await isPubKeyTrusted(body.pubkey);
   if (!trusted) {
     sendRejectResponse(body.nonce, "Not trusted by receiver");
     return;
@@ -71,12 +68,11 @@ export const handleCloneRequest = async (msg: Message) => {
 
 export const handleProxyRequest = async (msg: Message) => {
   const body = JSON.parse(msg.data.toString()) as ProxyRequest;
-  const address = getAddressFromPubKey(body.pubkey);
   const verified = verifySignature(body.nonce, body.signature, body.pubkey);
   if (!verified) {
     sendRejectResponse(body.nonce, "Signature verification failed");
   }
-  const trusted = isAddressTrusted(address);
+  const trusted = isPubKeyTrusted(body.pubkey)
   if (!trusted) {
     sendRejectResponse(body.nonce, "Not trusted by receiver");
   }

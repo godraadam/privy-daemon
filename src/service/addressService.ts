@@ -17,6 +17,7 @@ import {
 import {
   decryptMessage,
   generateNonce,
+  sha256,
   signMessage,
   verifySignature,
 } from "../util/crypto";
@@ -88,3 +89,7 @@ const fetchRepoAndClone = async (
 
 export const getMessageRepoAddress = () => getMessageRepo().address.toString();
 export const getContactRepoAddress = () => getContactRepo().address.toString();
+
+export const deriveAddressFromPublicKey = (pubkey: string): string => {
+  return `/privy/${sha256(pubkey)}`
+}

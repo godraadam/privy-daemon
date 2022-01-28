@@ -27,6 +27,11 @@ export const handleMessage = async (msg: Message) => {
   if (!alias) {
     console.log("Sender is not a contact");
   }
-  console.log(`${alias ?? from} says: ${content}`);
+  const timestamp = decryptMessage(message.timestamp)
+  if (!timestamp) {
+    console.log("Something went wrong when decrypting timestamp!");
+    return;
+  }
+  console.log(`${alias ?? from} says: ${content}\nSent at ${new Date(timestamp).toLocaleDateString()}, delivered at ${Date.now().toLocaleString()}`);
   await addMessage(message);
 };

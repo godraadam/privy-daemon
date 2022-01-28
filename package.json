@@ -1,30 +1,33 @@
 {
-    "name": "privy-origin",
-    "version": "1.0.0",
+    "name": "privy-daemon",
+    "version": "alpha:0.0.1",
     "description": "",
     "main": "dist/main.js",
     "bin": "dist/main.js",
     "scripts": {
-      "start": "ts-node ./src/main.ts",
-      "start:prod": "npm run build && node .",
-      "start:dev": "nodemon .",
-      "build": "tsc",
-      "compile": "npm run build & pkg . -o dist/bin/privyd"
+        "start": "ts-node ./src/main.ts",
+        "start:prod": "npm run build && node .",
+        "start:dev": "nodemon .",
+        "build": "tsc",
+        "compile": "npm run build & pkg . -o dist/bin/privyd"
     },
     "author": "godraadam",
     "license": "ISC",
     "dependencies": {
-      "cryptico": "^1.0.2",
-      "express": "^4.17.1",
-      "http-status-codes": "^2.1.4",
-      "ipfs-core": "^0.11.1",
-      "orbit-db": "^0.27.2"
+        "better-logging": "^4.6.0",
+        "chalk": "4.0",
+        "cryptico": "^1.0.2",
+        "express": "^4.17.1",
+        "http-status-codes": "^2.1.4",
+        "ipfs-core": "^0.11.1",
+        "orbit-db": "^0.27.2",
+        "yargs": "^17.3.1"
     },
     "devDependencies": {
-      "@daotl/cryptico": "^2.0.0",
-      "@types/express": "^4.17.13",
-      "nodemon": "^2.0.15",
-      "ts-node": "^10.4.0"
+        "@daotl/cryptico": "^2.0.0",
+        "@types/express": "^4.17.13",
+        "@types/yargs": "^17.0.8",
+        "nodemon": "^2.0.15",
+        "ts-node": "^10.4.0"
     }
-  }
-  
+}

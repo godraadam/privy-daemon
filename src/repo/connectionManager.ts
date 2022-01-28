@@ -1,4 +1,3 @@
-import { PrivyContact } from "../model/contactModel";
 import { getIpfsInstance } from "../service/ipfsService";
 const OrbitDb = require("orbit-db");
 
@@ -17,7 +16,7 @@ export const getWriteKey = () => _orbitdb?.identity.id;
 export const verifyAddress = (addr: string) => OrbitDb.isValidAddress(addr);
 
 export const initMessageRepo = async () => {
-  console.log("Initializing message repo...");
+  console.info("Initializing message repo...");
   _messageRepo = await _orbitdb?.docstore("messages", {
     indexBy: "hash",
     accessController: {
@@ -26,21 +25,21 @@ export const initMessageRepo = async () => {
     },
   });
   _messageRepo.load();
-  console.log(`Message repo initialized at ${_messageRepo.address.toString()}`);
+  console.info(`Message repo initialized at ${_messageRepo.address.toString()}`);
 };
 
 export const cloneMessageRepo = async (dbaddr: string) => {
-  console.log("Cloning message repo...");
+  console.info("Cloning message repo...");
 
   _messageRepo = await _orbitdb?.docstore(dbaddr, { indexBy: "hash" });
   _messageRepo.load();
-  console.log(`Message repo cloned at ${_messageRepo.address.toString()}`);
+  console.info(`Message repo cloned at ${_messageRepo.address.toString()}`);
 };
 
 export const getMessageRepo = () => _messageRepo;
 
-export const initContactRepo = async (self: PrivyContact) => {
-  console.log("Initializing contact repo...");
+export const initContactRepo = async () => {
+  console.info("Initializing contact repo...");
   _contactRepo = await _orbitdb?.docstore("contacts", {
     indexBy: "hash",
     accessController: {
@@ -49,15 +48,14 @@ export const initContactRepo = async (self: PrivyContact) => {
     },
   });
   await _contactRepo.load(1000);
-  await _contactRepo.put(self);
-  console.log(`Contact repo initialized at ${_contactRepo.address.toString()}`);
+  console.info(`Contact repo initialized at ${_contactRepo.address.toString()}`);
 };
 
 export const cloneContactRepo = async (dbaddr: string) => {
-  console.log("Cloning contact repo...");
+  console.info("Cloning contact repo...");
   _contactRepo = await _orbitdb?.docstore(dbaddr, { indexBy: "hash" });
   await _contactRepo.load(1000);
-  console.log(`Contact repo cloned at ${_contactRepo.address.toString()}`);
+  console.info(`Contact repo cloned at ${_contactRepo.address.toString()}`);
 };
 
 export const getContactRepo = () => _contactRepo;

@@ -64,15 +64,13 @@ export const contactSetTrusted = async (alias: string, trusted: boolean) => {
   return await saveContact(contact);
 };
 
-export const isAddressTrusted = async (addr: string) => {
-  const contact = await getContactByAddress(addr);
+export const isPubKeyTrusted = async (pubkey: string) => {
+  const contact = await getContactByPublicKey(pubkey);
   if (!contact) {
     return false;
   }
   return contact.trusted;
 };
-
-export const getAddressFromPubKey = (pubkey: string) => sha256(pubkey);
 
 export const addProxy = async (
   contact: PrivyContact,
