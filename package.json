@@ -3,12 +3,9 @@
     "version": "0.0.1",
     "description": "",
     "main": "src/main.ts",
-    "bin": "dist/src/main.js",
     "scripts": {
         "start": "ts-node ./src/main.ts",
-        "start:prod": "npm run build && node dist/src/main.js",
-        "build": "tsc",
-        "compile": "pkg dist/src/main.js -o ./dist/bin/privyd",
+        "start:prod": "npm run compile && node dist/main.js",
         "bundle": "rollup -c"
     },
     "author": "godraadam",
