@@ -1,5 +1,6 @@
-ipfs*/
+.ipfs*/
 orbitdb/
 node_modules/
 dist/
 docker-compose.yml
+.env

@@ -1,2 +1,5 @@
-.ipfs/
-.orbitdb/
+ipfs/
+orbitdb/
+dist/
+node_modules/
+dist/

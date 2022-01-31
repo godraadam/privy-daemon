@@ -4,7 +4,6 @@ import { deriveAddressFromPublicKey } from "./addressService";
 import { getContactByAlias } from "./contactService";
 
 let _userAddress: string;
-let _username: string;
 let _rsakey: RSAKey;
 let _publicKeyString: string;
 
@@ -18,13 +17,8 @@ let _sharedPublicKeyString: string;
 const _keylen = 64;
 
 export const generateIdentity = async (
-  passphrase: string,
-  username: string
+  seed: string
 ) => {
-  const seed = crypto
-    .scryptSync(passphrase, username, _keylen)
-    .toString("base64");
-  _username = username;
   _rsakey = cryptico.generateRSAKey(seed, 1024);
   _publicKeyString = cryptico.publicKeyString(_rsakey);
   _userAddress = deriveAddressFromPublicKey(_publicKeyString)
@@ -56,9 +50,3 @@ export const getPublicKeyString = () => _publicKeyString;
 export const getSharedRSAKey = () => _sharedRsaKey;
 
 export const getSharedPublicKeyString = () => _sharedPublicKeyString;
-
-export const getUsername = () => _username
-
-export const getSelf = async () => {
-  return await getContactByAlias(_username);
-};

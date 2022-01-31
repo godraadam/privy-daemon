@@ -1,15 +1,15 @@
 {
     "name": "privy-daemon",
-    "version": "alpha:0.0.1",
+    "version": "0.0.1",
     "description": "",
-    "main": "dist/main.js",
-    "bin": "dist/main.js",
+    "main": "src/main.ts",
+    "bin": "dist/src/main.js",
     "scripts": {
         "start": "ts-node ./src/main.ts",
-        "start:prod": "npm run build && node .",
-        "start:dev": "nodemon .",
+        "start:prod": "npm run build && node dist/src/main.js",
         "build": "tsc",
-        "compile": "npm run build & pkg . -o dist/bin/privyd"
+        "compile": "pkg dist/src/main.js -o ./dist/bin/privyd",
+        "bundle": "rollup -c"
     },
     "author": "godraadam",
     "license": "ISC",
@@ -20,14 +20,14 @@
         "express": "^4.17.1",
         "http-status-codes": "^2.1.4",
         "ipfs-core": "^0.11.1",
-        "orbit-db": "^0.27.2",
-        "yargs": "^17.3.1"
+        "orbit-db": "^0.27.2"
     },
     "devDependencies": {
         "@daotl/cryptico": "^2.0.0",
+        "@rollup/plugin-commonjs": "^21.0.1",
+        "@rollup/plugin-typescript": "^8.3.0",
         "@types/express": "^4.17.13",
-        "@types/yargs": "^17.0.8",
-        "nodemon": "^2.0.15",
-        "ts-node": "^10.4.0"
+        "ts-node": "^10.4.0",
+        "typescript": "^4.5.5"
     }
 }
