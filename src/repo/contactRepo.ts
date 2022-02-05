@@ -13,7 +13,7 @@ export const saveContact = async (contact: PrivyContact) => {
 export const findContactByAlias = async (alias: string) => {
   const repo = getContactRepo();
   const hash = sha256(alias);
-  const resultSet = repo.get(hash) as PrivyContact[];
+  const resultSet = await repo.get(hash) as PrivyContact[];
   if (!resultSet.length) {
     return null;
   }
@@ -22,13 +22,13 @@ export const findContactByAlias = async (alias: string) => {
 
 export const findAllContacts = async () => {
   const repo = getContactRepo();
-  return repo.get("") as PrivyContact[];
+  return await repo.get("") as PrivyContact[];
 };
 
 export const deleteContact = async (alias: string) => {
   const repo = getContactRepo();
   const hash = sha256(alias);
-  const friend = findContactByAlias(hash);
+  const friend = await findContactByAlias(alias);
   if (!friend) {
     return null;
   }
@@ -51,4 +51,5 @@ export const findContactByPublicKey = async (pubkey: string) => {
     return null;
   }
   return result[0] as PrivyContact;
+
 };

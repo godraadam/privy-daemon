@@ -5,8 +5,8 @@
     "main": "src/main.ts",
     "scripts": {
         "start": "ts-node ./src/main.ts",
-        "start:prod": "npm run compile && node dist/main.js",
-        "bundle": "rollup -c"
+        "start:prod": "npm run build && node dist/main.js",
+        "build": "tsc"
     },
     "author": "godraadam",
     "license": "ISC",

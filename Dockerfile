@@ -13,4 +13,4 @@ RUN npm run build
 
 # expose default port 6131
 EXPOSE 6131
-ENTRYPOINT ["node", "dist/src/main.js"]
+ENTRYPOINT ["node", "dist/main.js"]

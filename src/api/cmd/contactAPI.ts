@@ -36,6 +36,7 @@ contactRouter.get("/:alias", async (req, res) => {
 
 contactRouter.delete("/rm/:alias", async (req, res) => {
   const hash = await removeContact(req.params.alias);
+  console.info(hash)
   if (!hash) {
     res.status(StatusCodes.NOT_FOUND).send();
     return;
