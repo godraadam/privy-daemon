@@ -8,7 +8,11 @@ import {
 } from "../../model/requestModel";
 import { getContactRepo, getMessageRepo } from "../../repo/connectionManager";
 import { isPubKeyTrusted } from "../../service/contactService";
-import { getPublicKeyString } from "../../service/identityService";
+import {
+  getPublicKeyString,
+  getUserAddress,
+  getUserName,
+} from "../../service/identityService";
 import { publishToTopic } from "../../service/ipfsService";
 import {
   encryptMessage,
@@ -16,6 +20,7 @@ import {
   signMessage,
   verifySignature,
 } from "../../util/crypto";
+import axios from "axios";
 
 const sendRejectResponse = async (channel: string, reason: string) => {
   const response: ResponseRejected = {
@@ -72,14 +77,29 @@ export const handleProxyRequest = async (msg: Message) => {
   if (!verified) {
     sendRejectResponse(body.nonce, "Signature verification failed");
   }
-  const trusted = isPubKeyTrusted(body.pubkey)
+  const trusted = isPubKeyTrusted(body.pubkey);
   if (!trusted) {
     sendRejectResponse(body.nonce, "Not trusted by receiver");
   }
 
   // Proxy request accepted
-  // signal the manager to start a new proxy node
-
+  // Signal the manager to start a new proxy node
+  try {
+    const response = await axios.post(
+      `http://127.0.0.1/api/account/${getUserName()}/add-proxy/${
+        body.pubkey
+      }`
+    );
+    if (response.status != 200) {
+      // handle
+      // possibly an error on the router side
+    } else {
+      // do nothing, all good
+    }
+  } catch (error) {
+    // handle
+    // possibly router is down, save request and retry later
+  }
   // Respond to request
   const nonce = generateNonce();
   const response: ProxyRequestResponse = {

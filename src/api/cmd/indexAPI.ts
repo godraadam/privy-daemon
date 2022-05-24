@@ -5,6 +5,6 @@ import { messageRouter } from "./messageAPI";
 
 export const apiRouter = Router();
 
-apiRouter.use("/msg", messageRouter);
+apiRouter.use("/message", messageRouter);
 apiRouter.use("/contact", contactRouter);
 apiRouter.use("/account", accountRouter);

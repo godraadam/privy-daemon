@@ -5,33 +5,33 @@ import { addMessage } from "../../service/messageService";
 import { verifySignature, decryptMessage } from "../../util/crypto";
 
 export const handleMessage = async (msg: Message) => {
-  console.log("Received message");
+  console.info("Received message");
   const message = JSON.parse(msg.data.toString()) as PrivyMessage;
 
   const from = decryptMessage(message.from);
   if (!from) {
-    console.log("Something went wrong when decrypting sender");
+    console.info("Something went wrong when decrypting sender");
     return;
   }
   const verified = verifySignature(message.nonce, message.signature, from);
   if (!verified) {
-    console.log("Signature verification failed, message discarded");
+    console.info("Signature verification failed, message discarded");
     return;
   }
   const content = decryptMessage(message.content);
   if (!content) {
-    console.log("Something went wrong when decrypting message");
+    console.info("Something went wrong when decrypting message");
     return;
   }
-  const alias = await getContactByPublicKey(from);
-  if (!alias) {
-    console.log("Sender is not a contact");
+  const contact = await getContactByPublicKey(from);
+  if (!contact) {
+    console.info("Sender is not a contact");
   }
   const timestamp = decryptMessage(message.timestamp)
   if (!timestamp) {
-    console.log("Something went wrong when decrypting timestamp!");
+    console.info("Something went wrong when decrypting timestamp!");
     return;
   }
-  console.log(`${alias ?? from} says: ${content}\nSent at ${new Date(timestamp).toLocaleDateString()}, delivered at ${Date.now().toLocaleString()}`);
+  console.info(`${contact ? contact.alias : from} says: ${content}\nSent at ${/*new Date(timestamp).toLocaleDateString()*/timestamp}, delivered at ${Date.now().toLocaleString()}`);
   await addMessage(message);
 };

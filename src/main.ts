@@ -40,6 +40,7 @@ const main = async () => {
   const seed = process.env.SEED;
   const pubkey = process.env.PUBKEY;
   const repo = process.env.REPO;
+  const username = process.env.USERNAME;
 
   // validate arguments
   
@@ -48,9 +49,15 @@ const main = async () => {
     process.exit(1);
   }
   
-  if ((type === "origin" || type === "remote") && !seed) {
-    console.error(`Seed is required for ${type} type!`);
-    process.exit(1);
+  if (type === "origin" || type === "remote") {
+    if(!seed) {
+      console.error(`Seed is required for ${type} type!`);
+      process.exit(1);
+    }
+    if(!username) {
+      console.error(`Username is required for ${type} type!`);
+      process.exit(1);
+    }
   }
 
   if (type === "proxy" && !pubkey) {
@@ -82,7 +89,11 @@ const main = async () => {
         console.error(`Seed is required for ${type} type!`);
         process.exit(1);
       }
-      generateIdentity(seed);
+      if (!username) {
+        console.error(`Username is required for ${type} type!`);
+        process.exit(1);
+      }
+      generateIdentity(seed, username);
       console.info(`Derived public key: ${getPublicKeyString()}`);
       console.info(`Derived user address: ${getUserAddress()}`);
 
@@ -104,7 +115,11 @@ const main = async () => {
         console.error("Seed is required!");
         process.exit(1);
       }
-      generateIdentity(seed);
+      if (!username) {
+        console.error(`Username is required for ${type} type!`);
+        process.exit(1);
+      }
+      generateIdentity(seed, username);
 
       // clone repos
       await fetchMessageRepoAddrAndClone(async (err?: PrivyError) => {

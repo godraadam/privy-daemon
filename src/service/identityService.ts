@@ -1,11 +1,11 @@
 import { cryptico, RSAKey } from "@daotl/cryptico";
 import crypto from "crypto";
 import { deriveAddressFromPublicKey } from "./addressService";
-import { getContactByAlias } from "./contactService";
 
 let _userAddress: string;
 let _rsakey: RSAKey;
 let _publicKeyString: string;
+let _username: string;
 
 // Each node will have this 'shared' private key as well
 // This is because the Cryptico module does not support signing only
@@ -17,12 +17,13 @@ let _sharedPublicKeyString: string;
 const _keylen = 64;
 
 export const generateIdentity = async (
-  seed: string
+  seed: string,
+  username: string
 ) => {
   _rsakey = cryptico.generateRSAKey(seed, 1024);
   _publicKeyString = cryptico.publicKeyString(_rsakey);
   _userAddress = deriveAddressFromPublicKey(_publicKeyString)
-  
+  _username = username;
   _generateSharedKeys()
 };
 
@@ -50,3 +51,5 @@ export const getPublicKeyString = () => _publicKeyString;
 export const getSharedRSAKey = () => _sharedRsaKey;
 
 export const getSharedPublicKeyString = () => _sharedPublicKeyString;
+
+export const getUserName = () => _username
