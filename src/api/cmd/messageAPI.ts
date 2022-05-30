@@ -22,6 +22,6 @@ messageRouter.post("/send", async (req, res) => {
     res.status(StatusCodes.NOT_FOUND).send("Contact not found!");
     return;
   }
-  await sendMessage(body.msg, to);
+  await sendMessage(body.msg, to, () => {});
   res.sendStatus(StatusCodes.OK);
 });

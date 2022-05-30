@@ -6,3 +6,11 @@ export interface PrivyMessage {
   signature: string;
   hash?: string;
 }
+
+export interface PrivyMessageReceipt {
+  status: "delivered";
+  pubkey: string;
+  nonce: string;
+  signature: string;
+  timestamp: string;
+}

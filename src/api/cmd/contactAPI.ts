@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { StatusCodes } from "http-status-codes";
 import { PrivyContact, PrivyContactCreate } from "../../model/contactModel";
+import { PrivyError } from "../../model/errors";
 import { deriveAddressFromPublicKey } from "../../service/addressService";
 import {
   addContact,
@@ -9,6 +10,7 @@ import {
   getContactByAlias,
   removeContact,
 } from "../../service/contactService";
+import { sendProxyrequest } from "../../service/proxyService";
 
 export const contactRouter = Router();
 
@@ -44,7 +46,7 @@ contactRouter.delete("/rm/:alias", async (req, res) => {
   res.status(StatusCodes.OK).json(hash).send();
 });
 
-contactRouter.put("/trust:alias", async (req, res) => {
+contactRouter.put("/trust/:alias", async (req, res) => {
   const result = contactSetTrusted(req.params.alias, true);
   if (!result) {
     res
@@ -55,7 +57,7 @@ contactRouter.put("/trust:alias", async (req, res) => {
   res.sendStatus(StatusCodes.OK);
 });
 
-contactRouter.put("/untrust:alias", async (req, res) => {
+contactRouter.put("/untrust/:alias", async (req, res) => {
   const result = await contactSetTrusted(req.params.alias, false);
   if (!result) {
     res
@@ -66,7 +68,7 @@ contactRouter.put("/untrust:alias", async (req, res) => {
   res.sendStatus(StatusCodes.OK);
 });
 
-contactRouter.post("/add-proxy:alias", async (req, res) => {
+contactRouter.post("/add-proxy/:alias", async (req, res) => {
   const contact = await getContactByAlias(req.params.alias);
   if (!contact) {
     res
@@ -74,6 +76,20 @@ contactRouter.post("/add-proxy:alias", async (req, res) => {
       .send(`${req.params.alias} is not a contact`);
     return;
   }
-  // add proxy logic here
+  if (!contact.trusted) {
+    res.status(StatusCodes.BAD_REQUEST).send(`${req.params.alias} is not a trusted contact!`);
+    return;
+  }
+  sendProxyrequest(contact, (err?: PrivyError) => {
+    if (err) {
+      console.info(`An error occured during the proxy request: ${err.toString()}!`)
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).send(`The following error occured: ${err.toString()}`);
+      return;
+    }
+    else {
+      res.status(StatusCodes.OK).json(contact);
+    }
+  });
+  
   res.sendStatus(StatusCodes.OK);
 });
