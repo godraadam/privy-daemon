@@ -1,8 +1,9 @@
 import {
   cloneContactRepo,
-  cloneMessageRepo,
+  cloneIncomingMessageRepo,
+  cloneOutgoingMessageRepo,
   getContactRepo,
-  getMessageRepo,
+  getIncomingMessageRepo,
   getWriteKey,
   verifyAddress,
 } from "../repo/connectionManager";
@@ -23,11 +24,18 @@ import {
 } from "../util/crypto";
 import { PrivyError } from "../model/errors";
 
-export const fetchMessageRepoAddrAndClone = async (
+export const fetchIncomingMessageRepoAddrAndClone = async (
   callback: (err?: PrivyError) => void
 ) => {
-  await fetchRepoAndClone("MESSAGES", callback, cloneMessageRepo);
+  await fetchRepoAndClone("MESSAGES", callback, cloneIncomingMessageRepo);
 };
+
+export const fetchOutgoingMessageRepoAddrAndClone = async (
+  callback: (err?: PrivyError) => void
+) => {
+  await fetchRepoAndClone("MESSAGES", callback, cloneOutgoingMessageRepo);
+};
+
 
 export const fetchContactRepoAddrAndClone = async (
   callback: (err?: PrivyError) => void
@@ -87,7 +95,7 @@ const fetchRepoAndClone = async (
   }
 };
 
-export const getMessageRepoAddress = () => getMessageRepo().address.toString();
+export const getMessageRepoAddress = () => getIncomingMessageRepo().address.toString();
 export const getContactRepoAddress = () => getContactRepo().address.toString();
 
 export const deriveAddressFromPublicKey = (pubkey: string): string => {

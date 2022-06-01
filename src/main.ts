@@ -18,7 +18,8 @@ import {
 } from "./service/identityService";
 import {
   fetchContactRepoAddrAndClone,
-  fetchMessageRepoAddrAndClone,
+  fetchIncomingMessageRepoAddrAndClone,
+  fetchOutgoingMessageRepoAddrAndClone,
 } from "./service/addressService";
 import { PrivyError } from "./model/errors";
 import { handleMessage } from "./api/privy/messageApi";
@@ -43,18 +44,18 @@ const main = async () => {
   const username = process.env.USERNAME;
 
   // validate arguments
-  
+
   if (!type || ["origin", "remote", "proxy"].indexOf(type) < 0) {
     console.error("Invalid node type!");
     process.exit(1);
   }
-  
+
   if (type === "origin" || type === "remote") {
-    if(!seed) {
+    if (!seed) {
       console.error(`Seed is required for ${type} type!`);
       process.exit(1);
     }
-    if(!username) {
+    if (!username) {
       console.error(`Username is required for ${type} type!`);
       process.exit(1);
     }
@@ -122,21 +123,29 @@ const main = async () => {
       generateIdentity(seed, username);
 
       // clone repos
-      await fetchMessageRepoAddrAndClone(async (err?: PrivyError) => {
+      await fetchIncomingMessageRepoAddrAndClone(async (err?: PrivyError) => {
         if (err) {
           console.error(
-            `Failed to clone message repo! Error is ${err.toString()}. Exiting...`
+            `Failed to clone incoming message repo! Error is ${err.toString()}. Exiting...`
           );
           process.exit(1);
         }
-        await fetchContactRepoAddrAndClone((err?: PrivyError) => {
+        await fetchOutgoingMessageRepoAddrAndClone(async (err?: PrivyError) => {
           if (err) {
             console.error(
-              `Failed to clone contacts repo! Error is ${err.toString()}. Exiting...`
+              `Failed to clone outgoing message repo! Error is ${err.toString()}. Exiting...`
             );
             process.exit(1);
           }
-          _subscribeToTopics(getUserAddress());
+          await fetchContactRepoAddrAndClone((err?: PrivyError) => {
+            if (err) {
+              console.error(
+                `Failed to clone contacts repo! Error is ${err.toString()}. Exiting...`
+              );
+              process.exit(1);
+            }
+            _subscribeToTopics(getUserAddress());
+          });
         });
       });
       break;
@@ -149,21 +158,30 @@ const main = async () => {
       generateProxyIdentity(pubkey);
 
       // clone repos
-      await fetchMessageRepoAddrAndClone(async (err?: PrivyError) => {
+       // clone repos
+       await fetchIncomingMessageRepoAddrAndClone(async (err?: PrivyError) => {
         if (err) {
           console.error(
-            `Failed to clone message repo! Error is ${err.toString()}. Exiting...`
+            `Failed to clone incoming message repo! Error is ${err.toString()}. Exiting...`
           );
           process.exit(1);
         }
-        await fetchContactRepoAddrAndClone((err?: PrivyError) => {
+        await fetchOutgoingMessageRepoAddrAndClone(async (err?: PrivyError) => {
           if (err) {
             console.error(
-              `Failed to clone contacts repo! Error is ${err.toString()}. Exiting...`
+              `Failed to clone outgoing message repo! Error is ${err.toString()}. Exiting...`
             );
             process.exit(1);
           }
-          _subscribeToTopics(getUserAddress());
+          await fetchContactRepoAddrAndClone((err?: PrivyError) => {
+            if (err) {
+              console.error(
+                `Failed to clone contacts repo! Error is ${err.toString()}. Exiting...`
+              );
+              process.exit(1);
+            }
+            _subscribeToTopics(getUserAddress());
+          });
         });
       });
       break;

@@ -6,7 +6,7 @@ import {
   ProxyRequestResponse,
   ResponseRejected,
 } from "../../model/requestModel";
-import { getContactRepo, getMessageRepo } from "../../repo/connectionManager";
+import { getContactRepo, getIncomingMessageRepo } from "../../repo/connectionManager";
 import { isPubKeyTrusted } from "../../service/contactService";
 import {
   getPublicKeyString,
@@ -62,7 +62,7 @@ export const handleCloneRequest = async (msg: Message) => {
 
   switch (body.repo) {
     case "MESSAGES":
-      sendResponse(getMessageRepo());
+      sendResponse(getIncomingMessageRepo());
       break;
     case "CONTACTS":
       sendResponse(getContactRepo());

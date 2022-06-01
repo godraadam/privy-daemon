@@ -2,7 +2,8 @@ import { getIpfsInstance } from "../service/ipfsService";
 const OrbitDb = require("orbit-db");
 
 let _orbitdb: any = null;
-let _messageRepo: any = null;
+let _incomingMessageRepo: any = null;
+let _outgoingMessageRepo: any = null;
 let _contactRepo: any = null;
 
 export const initOrbitDb = async () => {
@@ -17,26 +18,47 @@ export const verifyAddress = (addr: string) => OrbitDb.isValidAddress(addr);
 
 export const initMessageRepo = async () => {
   console.info("Initializing message repo...");
-  _messageRepo = await _orbitdb?.docstore("messages", {
+  _incomingMessageRepo = await _orbitdb?.docstore("incoming_messages", {
     indexBy: "hash",
     accessController: {
       type: "orbitdb",
       write: [getWriteKey()],
     },
   });
-  _messageRepo.load();
-  console.info(`Message repo initialized at ${_messageRepo.address.toString()}`);
+  _incomingMessageRepo.load();
+  
+  _outgoingMessageRepo = await _orbitdb?.docstore("outgoing_messages", {
+    indexBy: "hash",
+    accessController: {
+      type: "orbitdb",
+      write: [getWriteKey()],
+    },
+  });
+  _outgoingMessageRepo.load();
+  console.info(`Incoming message repo initialized at ${_incomingMessageRepo.address.toString()}`);
+  console.info(`Outgoing message repo initialized at ${_outgoingMessageRepo.address.toString()}`);
 };
 
-export const cloneMessageRepo = async (dbaddr: string) => {
-  console.info("Cloning message repo...");
+export const cloneIncomingMessageRepo = async (incomingDbAddr: string) => {
+  console.info("Cloning incoming message repo...");
 
-  _messageRepo = await _orbitdb?.docstore(dbaddr, { indexBy: "hash" });
-  _messageRepo.load();
-  console.info(`Message repo cloned at ${_messageRepo.address.toString()}`);
+  _incomingMessageRepo = await _orbitdb?.docstore(incomingDbAddr, { indexBy: "hash" });
+  _incomingMessageRepo.load();
+  
+  console.info(`Incoming message repo cloned at ${_incomingMessageRepo.address.toString()}`);
 };
 
-export const getMessageRepo = () => _messageRepo;
+export const cloneOutgoingMessageRepo = async (outgoingDbAddr: string) => {
+  console.info("Cloning ourgoing message repo...");
+
+  _outgoingMessageRepo = await _orbitdb?.docstore(outgoingDbAddr, { indexBy: "hash" });
+  _outgoingMessageRepo.load();
+  
+  console.info(`outgoing message repo cloned at ${_outgoingMessageRepo.address.toString()}`);
+};
+
+export const getIncomingMessageRepo = () => _incomingMessageRepo;
+export const getOutgoingMessageRepo = () => _outgoingMessageRepo;
 
 export const initContactRepo = async () => {
   console.info("Initializing contact repo...");

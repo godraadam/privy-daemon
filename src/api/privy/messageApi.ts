@@ -1,7 +1,7 @@
 import { Message } from "ipfs-core-types/src/pubsub";
 import { PrivyMessage } from "../../model/messageModel";
+import { saveIncomingMessage } from "../../repo/messageRepo";
 import { getContactByPublicKey } from "../../service/contactService";
-import { addMessage } from "../../service/messageService";
 import { verifySignature, decryptMessage } from "../../util/crypto";
 
 export const handleMessage = async (msg: Message) => {
@@ -32,6 +32,7 @@ export const handleMessage = async (msg: Message) => {
     console.info("Something went wrong when decrypting timestamp!");
     return;
   }
-  console.info(`${contact ? contact.alias : from} says: ${content}\nSent at ${/*new Date(timestamp).toLocaleDateString()*/timestamp}, delivered at ${Date.now().toLocaleString()}`);
-  await addMessage(message);
+  console.info(`${contact ? contact.alias : from} says: ${content}\nSent at ${new Date(parseInt(timestamp)).toLocaleString()}, delivered at ${Date.now().toLocaleString()}`);
+  // save to repo, encrypted
+  await saveIncomingMessage(message);
 };
