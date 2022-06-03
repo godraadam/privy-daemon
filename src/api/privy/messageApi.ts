@@ -1,8 +1,10 @@
 import { Message } from "ipfs-core-types/src/pubsub";
-import { PrivyMessage } from "../../model/messageModel";
+import { PrivyMessage, PrivyMessageReceipt } from "../../model/messageModel";
 import { saveIncomingMessage } from "../../repo/messageRepo";
 import { getContactByPublicKey } from "../../service/contactService";
-import { verifySignature, decryptMessage } from "../../util/crypto";
+import { getPublicKeyString } from "../../service/identityService";
+import { publishToTopic } from "../../service/ipfsService";
+import { verifySignature, decryptMessage, encryptMessage, generateNonce, signMessage } from "../../util/crypto";
 
 export const handleMessage = async (msg: Message) => {
   console.info("Received message");
@@ -32,7 +34,19 @@ export const handleMessage = async (msg: Message) => {
     console.info("Something went wrong when decrypting timestamp!");
     return;
   }
+  
   console.info(`${contact ? contact.alias : from} says: ${content}\nSent at ${new Date(parseInt(timestamp)).toLocaleString()}, delivered at ${Date.now().toLocaleString()}`);
   // save to repo, encrypted
   await saveIncomingMessage(message);
+  
+  // send receipt confirmation
+  const nonce = generateNonce();
+  const receiptObj: PrivyMessageReceipt = {
+    status: "delivered",
+    pubkey: encryptMessage(getPublicKeyString(), from),
+    nonce: nonce,
+    signature: signMessage(nonce),
+    timestamp: encryptMessage(Date.now().toString(), from)
+  };
+  publishToTopic(message.nonce, JSON.stringify(receiptObj));
 };

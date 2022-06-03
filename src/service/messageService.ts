@@ -1,6 +1,6 @@
 import { PrivyContact } from "../model/contactModel";
 import { PrivyMessage, PrivyMessageReceipt } from "../model/messageModel";
-import { getAllIncomingMessages, getAllOutgoingMessages, saveOutgoingMessage } from "../repo/messageRepo";
+import { getAllIncomingMessages, getAllOutgoingMessages, saveOutgoingMessage, updateOutgoingMessage } from "../repo/messageRepo";
 import {
   decryptMessage,
   encryptMessage,
@@ -40,10 +40,12 @@ export const sendMessage = async (
 ) => {
   const _handleResponse = async (msg: Message) => {
     const response = JSON.parse(msg.data.toString()) as PrivyMessageReceipt;
-    const verified = verifySignature(
+    const pubKeyDecrypted = decryptMessage(response.pubkey);
+    
+    const verified = pubKeyDecrypted && verifySignature(
       response.nonce,
       response.signature,
-      response.pubkey
+      pubKeyDecrypted
     );
 
     if (!verified) {
@@ -55,9 +57,12 @@ export const sendMessage = async (
     if (verified) {
       const deliveryTime = decryptMessage(response.timestamp);
       console.info(
-        `Message receipt received from ${response.pubkey} at ${deliveryTime}`
+        `Message receipt received from ${pubKeyDecrypted} at ${deliveryTime}`
       );
       // additional logic here
+      // set delivered, save again
+      console.info("Updating message record with delivered field");
+      updateOutgoingMessage(hash, {delivered: true});
     }
     unSubscribeFromTopic(nonce);
     callback();
@@ -73,6 +78,8 @@ export const sendMessage = async (
     timestamp: encryptMessage(sentTimestamp, to.pubkey),
     nonce: nonce,
     signature: signMessage(nonce),
+    delivered:false,
+    seen:false
   };
 
   subscribeToTopic(nonce, _handleResponse);
@@ -80,13 +87,15 @@ export const sendMessage = async (
   // send message
   await publishToTopic(to.address + "/inbox", JSON.stringify(msgObject));
   //save sent message to repo, encrypted
-  await saveOutgoingMessage({
+  const hash = await saveOutgoingMessage({
     from: encryptMessage(getPublicKeyString(), getPublicKeyString()),
     to: encryptMessage(to.pubkey, getPublicKeyString()),
     content: encryptMessage(msg, getPublicKeyString()),
     timestamp: encryptMessage(sentTimestamp, getPublicKeyString()),
     nonce: nonce,
     signature: signMessage(nonce),
+    delivered:false,
+    seen:false
   });
   console.info(`Message has been sent to ${to.alias}, at ${sentTimestamp}`);
 };

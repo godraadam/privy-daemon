@@ -6,6 +6,13 @@ export interface PrivyMessage {
   nonce: string;
   signature: string;
   hash?: string;
+  delivered?: boolean;
+  seen? : boolean;
+}
+
+export interface PrivyMessageUpdate {
+  delivered?: boolean;
+  seen? : boolean;
 }
 
 export interface PrivyMessageReceipt {
