@@ -1,5 +1,5 @@
 import { PrivyContact } from "../model/contactModel";
-import { PrivyMessage, PrivyMessageReceipt } from "../model/messageModel";
+import { PrivyMessage, PrivyMessageInRepo, PrivyMessageReceipt } from "../model/messageModel";
 import { getAllIncomingMessages, getAllOutgoingMessages, saveOutgoingMessage, updateOutgoingMessage } from "../repo/messageRepo";
 import {
   decryptMessage,
@@ -17,6 +17,8 @@ import {
 } from "./ipfsService";
 import { Message } from "ipfs-core-types/src/pubsub";
 import { PrivyError } from "../model/errors";
+
+const timeoutLength = 5000;
 
 
 export const getMessagesWith = async (alias: string): Promise<PrivyMessage[]> => {
@@ -61,8 +63,9 @@ export const sendMessage = async (
       );
       // additional logic here
       // set delivered, save again
-      console.info("Updating message record with delivered field");
-      updateOutgoingMessage(hash, {delivered: true});
+      console.info("Updating message record with delivered field: delivered");
+      updateOutgoingMessage(hash, {delivered: "delivered"});
+      delivered = true;
     }
     unSubscribeFromTopic(nonce);
     callback();
@@ -78,14 +81,25 @@ export const sendMessage = async (
     timestamp: encryptMessage(sentTimestamp, to.pubkey),
     nonce: nonce,
     signature: signMessage(nonce),
-    delivered:false,
-    seen:false
   };
 
-  subscribeToTopic(nonce, _handleResponse);
+  // delivery confirmation business
+  await subscribeToTopic(nonce, _handleResponse);
+  let delivered = false;
+  
+  // set timeout: if no confirmation received, set delivered status to false
+  // and stop waiting for confirmation
+  setTimeout(() => {
+    if (!delivered) {
+      console.info("Updating message record with delivered field: failed");
+      updateOutgoingMessage(hash, {delivered: "failed"});
+      unSubscribeFromTopic(nonce);
+    }
+  }, timeoutLength)
 
   // send message
   await publishToTopic(to.address + "/inbox", JSON.stringify(msgObject));
+  
   //save sent message to repo, encrypted
   const hash = await saveOutgoingMessage({
     from: encryptMessage(getPublicKeyString(), getPublicKeyString()),
@@ -94,7 +108,7 @@ export const sendMessage = async (
     timestamp: encryptMessage(sentTimestamp, getPublicKeyString()),
     nonce: nonce,
     signature: signMessage(nonce),
-    delivered:false,
+    delivered: "undetermined",
     seen:false
   });
   console.info(`Message has been sent to ${to.alias}, at ${sentTimestamp}`);

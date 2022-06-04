@@ -1,72 +1,65 @@
-import { PrivyMessage, PrivyMessageUpdate } from "../model/messageModel";
+import {
+  PrivyMessage,
+  PrivyMessageInRepo,
+  PrivyMessageUpdate,
+} from "../model/messageModel";
 import { getContactByPublicKey } from "../service/contactService";
 import { decryptMessage, sha256 } from "../util/crypto";
-import { getIncomingMessageRepo, getOutgoingMessageRepo } from "./connectionManager";
+import {
+  getIncomingMessageRepo,
+  getOutgoingMessageRepo,
+} from "./connectionManager";
+
+const _getAllInOrOutgoingMessages = async (repo: any) => {
+  const allMessages = (await repo.get("")) as PrivyMessageInRepo[];
+  const messagesDecrypted = Promise.all(
+    allMessages.map(async (msg) => {
+      const fromPubKey = decryptMessage(msg.from) ?? "";
+      const from = await getContactByPublicKey(fromPubKey);
+      const fromAlias = from ? from.alias : "DECRYPTION_ERROR";
+
+      const toPubKey = decryptMessage(msg.to) ?? "";
+      const to = await getContactByPublicKey(toPubKey);
+      const toAlias = to ? to.alias : "DECRYPTION_ERROR";
+
+      const decryptedMessage: PrivyMessageInRepo = {
+        hash: msg.hash,
+        from: fromAlias,
+        to: toAlias,
+        timestamp: decryptMessage(msg.timestamp) ?? "DECRYPTION ERROR",
+        content: decryptMessage(msg.content) ?? "DECRYPTION ERROR",
+        signature: msg.signature,
+        nonce: msg.nonce,
+        delivered: msg.delivered,
+        seen: msg.seen,
+      };
+      return decryptedMessage;
+    })
+  );
+  return messagesDecrypted;
+}
 
 export const getAllIncomingMessages = async () => {
-  const msgdb = getIncomingMessageRepo();
-  const allIncomingMessages = (await msgdb.get("")) as PrivyMessage[];
-  const incomingMessagesDecrypted = Promise.all(allIncomingMessages.map(async (msg) => {
-    const fromPubKey = decryptMessage(msg.from) ?? "";
-    const from = await getContactByPublicKey(fromPubKey);
-    const fromAlias = from ? from.alias : "DECRYPTION_ERROR";
-    
-    const toPubKey = decryptMessage(msg.to) ?? "";
-    const to = await getContactByPublicKey(toPubKey);
-    const toAlias = to ? to.alias : "DECRYPTION_ERROR";
-
-    const decryptedMessage: PrivyMessage = {
-      from: fromAlias,
-      to: toAlias,
-      timestamp: decryptMessage(msg.timestamp) ?? "DECRYPTION ERROR",
-      content: decryptMessage(msg.content) ?? "DECRYPTION ERROR",
-      signature: msg.signature,
-      nonce: msg.nonce,
-      delivered: msg.delivered,
-      seen: msg.seen
-    };
-    return decryptedMessage;
-  }));
-  return incomingMessagesDecrypted;
+  return await _getAllInOrOutgoingMessages(await getIncomingMessageRepo());
 };
 
 export const getAllOutgoingMessages = async () => {
-  const msgdb = getOutgoingMessageRepo();
-  const allIncomingMessages = (await msgdb.get("")) as PrivyMessage[];
-  const incomingMessagesDecrypted = Promise.all(allIncomingMessages.map(async (msg) => {
-    const fromPubKey = decryptMessage(msg.from) ?? "";
-    const from = await getContactByPublicKey(fromPubKey);
-    const fromAlias = from ? from.alias : "DECRYPTION_ERROR";
-    
-    const toPubKey = decryptMessage(msg.to) ?? "";
-    const to = await getContactByPublicKey(toPubKey);
-    const toAlias = to ? to.alias : "DECRYPTION_ERROR";
-
-    const decryptedMessage: PrivyMessage = {
-      from: fromAlias,
-      to: toAlias,
-      timestamp: decryptMessage(msg.timestamp) ?? "DECRYPTION ERROR",
-      content: decryptMessage(msg.content) ?? "DECRYPTION ERROR",
-      signature: msg.signature,
-      nonce: msg.nonce,
-      delivered: msg.delivered,
-      seen: msg.seen
-    };
-    return decryptedMessage;
-  }));
-  return incomingMessagesDecrypted;
+  return await _getAllInOrOutgoingMessages(await getOutgoingMessageRepo());
 };
 
-export const getIncomingMessageByHash = async (hash: string) => {
+export const getIncomingMessageByHash = async (hash: string): Promise<PrivyMessageInRepo | null> => {
   const msgdb = getIncomingMessageRepo();
-  const resultSet = await msgdb.get(hash) as PrivyMessage[];
+  const resultSet = (await msgdb.get(hash)) as PrivyMessageInRepo[];
   if (!resultSet.length) {
     return null;
   }
   return resultSet[0];
-}
+};
 
-export const updateIncomingMessage = async (hash: string, msgObj: PrivyMessageUpdate) => {
+export const updateIncomingMessage = async (
+  hash: string,
+  msgObj: PrivyMessageUpdate
+) => {
   const msgFromRepo = await getIncomingMessageByHash(hash);
   if (!msgFromRepo) {
     return null;
@@ -78,18 +71,23 @@ export const updateIncomingMessage = async (hash: string, msgObj: PrivyMessageUp
     msgFromRepo.seen = msgObj.seen;
   }
   return await saveIncomingMessage(msgFromRepo);
-}
+};
 
-export const getOutgoingMessageByHash = async (hash: string) => {
+export const getOutgoingMessageByHash = async (
+  hash: string
+): Promise<PrivyMessageInRepo | null> => {
   const msgdb = getOutgoingMessageRepo();
-  const resultSet = await msgdb.get(hash) as PrivyMessage[];
+  const resultSet = (await msgdb.get(hash)) as PrivyMessageInRepo[];
   if (!resultSet.length) {
     return null;
   }
   return resultSet[0];
-}
+};
 
-export const updateOutgoingMessage = async (hash: string, msgObj: PrivyMessageUpdate) => {
+export const updateOutgoingMessage = async (
+  hash: string,
+  msgObj: PrivyMessageUpdate
+) => {
   const msgFromRepo = await getOutgoingMessageByHash(hash);
   if (!msgFromRepo) {
     return null;
@@ -101,9 +99,9 @@ export const updateOutgoingMessage = async (hash: string, msgObj: PrivyMessageUp
     msgFromRepo.seen = msgObj.seen;
   }
   return await saveOutgoingMessage(msgFromRepo);
-}
+};
 
-export const saveIncomingMessage = async (msg: PrivyMessage) => {
+export const saveIncomingMessage = async (msg: PrivyMessageInRepo) => {
   const msgdb = getIncomingMessageRepo();
   const hash = hashMessage(msg);
   msg = { ...msg, hash: hash };
@@ -111,14 +109,14 @@ export const saveIncomingMessage = async (msg: PrivyMessage) => {
   return hash;
 };
 
-export const saveOutgoingMessage = async (msg: PrivyMessage) => {
+export const saveOutgoingMessage = async (msg: PrivyMessageInRepo) => {
   const msgdb = getOutgoingMessageRepo();
   const hash = hashMessage(msg);
   msg = { ...msg, hash: hash };
   await msgdb.put(msg);
   return hash;
-}
+};
 
 const hashMessage = (msg: PrivyMessage) => {
   return sha256(`${msg.timestamp}${msg.from}${msg.content}`);
-}
+};

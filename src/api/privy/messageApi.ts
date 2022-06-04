@@ -1,5 +1,5 @@
 import { Message } from "ipfs-core-types/src/pubsub";
-import { PrivyMessage, PrivyMessageReceipt } from "../../model/messageModel";
+import { PrivyMessage, PrivyMessageInRepo, PrivyMessageReceipt } from "../../model/messageModel";
 import { saveIncomingMessage } from "../../repo/messageRepo";
 import { getContactByPublicKey } from "../../service/contactService";
 import { getPublicKeyString } from "../../service/identityService";
@@ -37,7 +37,8 @@ export const handleMessage = async (msg: Message) => {
   
   console.info(`${contact ? contact.alias : from} says: ${content}\nSent at ${new Date(parseInt(timestamp)).toLocaleString()}, delivered at ${Date.now().toLocaleString()}`);
   // save to repo, encrypted
-  await saveIncomingMessage(message);
+  const messageToSave: PrivyMessageInRepo = {...message, delivered:"delivered", seen:false};
+  await saveIncomingMessage(messageToSave);
   
   // send receipt confirmation
   const nonce = generateNonce();
