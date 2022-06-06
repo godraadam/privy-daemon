@@ -1,6 +1,13 @@
 import { PrivyContact } from "../model/contactModel";
-import { PrivyMessage, PrivyMessageInRepo, PrivyMessageReceipt } from "../model/messageModel";
-import { getAllIncomingMessages, getAllOutgoingMessages, saveOutgoingMessage, updateOutgoingMessage } from "../repo/messageRepo";
+import { PrivyMessage, PrivyMessageReceipt } from "../model/messageModel";
+import {
+  getAllIncomingMessages,
+  getAllOutgoingMessages,
+  removeIncomingMessage,
+  removeOutgoingMessage,
+  saveOutgoingMessage,
+  updateOutgoingMessage,
+} from "../repo/messageRepo";
 import {
   decryptMessage,
   encryptMessage,
@@ -20,19 +27,33 @@ import { PrivyError } from "../model/errors";
 
 const timeoutLength = 5000;
 
-
-export const getMessagesWith = async (alias: string): Promise<PrivyMessage[]> => {
+export const getMessagesWith = async (
+  alias: string
+): Promise<PrivyMessage[]> => {
   const contact = await getContactByAlias(alias);
   if (!contact) {
     return [];
   }
-  
-  const incomingMessages = (await getAllIncomingMessages()) as Array<PrivyMessage>;
-  const messagesFromContact =  incomingMessages.filter((msg) => msg.from == contact.alias);
-  
-  const otugoinMessages = (await getAllOutgoingMessages()) as Array<PrivyMessage>;
-  const messagesToContact =  otugoinMessages.filter((msg) => msg.to == contact.alias);
+
+  const incomingMessages =
+    (await getAllIncomingMessages()) as Array<PrivyMessage>;
+  const messagesFromContact = incomingMessages.filter(
+    (msg) => msg.from == contact.alias
+  );
+
+  const otugoinMessages =
+    (await getAllOutgoingMessages()) as Array<PrivyMessage>;
+  const messagesToContact = otugoinMessages.filter(
+    (msg) => msg.to == contact.alias
+  );
   return messagesFromContact.concat(messagesToContact);
+};
+
+export const removeMessage = async (hash: string) => {
+  return await Promise.all([
+    removeIncomingMessage(hash),
+    removeOutgoingMessage(hash),
+  ]);
 };
 
 export const sendMessage = async (
@@ -43,12 +64,10 @@ export const sendMessage = async (
   const _handleResponse = async (msg: Message) => {
     const response = JSON.parse(msg.data.toString()) as PrivyMessageReceipt;
     const pubKeyDecrypted = decryptMessage(response.pubkey);
-    
-    const verified = pubKeyDecrypted && verifySignature(
-      response.nonce,
-      response.signature,
-      pubKeyDecrypted
-    );
+
+    const verified =
+      pubKeyDecrypted &&
+      verifySignature(response.nonce, response.signature, pubKeyDecrypted);
 
     if (!verified) {
       console.error(
@@ -64,7 +83,7 @@ export const sendMessage = async (
       // additional logic here
       // set delivered, save again
       console.info("Updating message record with delivered field: delivered");
-      updateOutgoingMessage(hash, {delivered: "delivered"});
+      updateOutgoingMessage(hash, { delivered: "delivered" });
       delivered = true;
     }
     unSubscribeFromTopic(nonce);
@@ -86,20 +105,7 @@ export const sendMessage = async (
   // delivery confirmation business
   await subscribeToTopic(nonce, _handleResponse);
   let delivered = false;
-  
-  // set timeout: if no confirmation received, set delivered status to false
-  // and stop waiting for confirmation
-  setTimeout(() => {
-    if (!delivered) {
-      console.info("Updating message record with delivered field: failed");
-      updateOutgoingMessage(hash, {delivered: "failed"});
-      unSubscribeFromTopic(nonce);
-    }
-  }, timeoutLength)
 
-  // send message
-  await publishToTopic(to.address + "/inbox", JSON.stringify(msgObject));
-  
   //save sent message to repo, encrypted
   const hash = await saveOutgoingMessage({
     from: encryptMessage(getPublicKeyString(), getPublicKeyString()),
@@ -109,7 +115,21 @@ export const sendMessage = async (
     nonce: nonce,
     signature: signMessage(nonce),
     delivered: "undetermined",
-    seen:false
+    seen: false,
   });
   console.info(`Message has been sent to ${to.alias}, at ${sentTimestamp}`);
+
+  // set timeout: if no confirmation received, set delivered status to false
+  // and stop waiting for confirmation
+  setTimeout(() => {
+    if (!delivered) {
+      console.info("Updating message record with delivered field: failed");
+      updateOutgoingMessage(hash, { delivered: "failed" });
+      unSubscribeFromTopic(nonce);
+    }
+  }, timeoutLength);
+
+  // send message
+  // do not send before saving to repo because we can end up with race condition over 'hash' variable
+  await publishToTopic(to.address + "/inbox", JSON.stringify(msgObject));
 };

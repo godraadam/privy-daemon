@@ -10,7 +10,7 @@ import {
   getOutgoingMessageRepo,
 } from "./connectionManager";
 
-const _getAllInOrOutgoingMessages = async (repo: any) => {
+const _getAllInOrOutgoingMessages = async (repo: any): Promise<PrivyMessageInRepo[]> => {
   const allMessages = (await repo.get("")) as PrivyMessageInRepo[];
   const messagesDecrypted = Promise.all(
     allMessages.map(async (msg) => {
@@ -39,13 +39,9 @@ const _getAllInOrOutgoingMessages = async (repo: any) => {
   return messagesDecrypted;
 }
 
-export const getAllIncomingMessages = async () => {
-  return await _getAllInOrOutgoingMessages(await getIncomingMessageRepo());
-};
+export const getAllIncomingMessages = async () =>  await _getAllInOrOutgoingMessages(getIncomingMessageRepo());
 
-export const getAllOutgoingMessages = async () => {
-  return await _getAllInOrOutgoingMessages(await getOutgoingMessageRepo());
-};
+export const getAllOutgoingMessages = async () =>  await _getAllInOrOutgoingMessages(getOutgoingMessageRepo());
 
 export const getIncomingMessageByHash = async (hash: string): Promise<PrivyMessageInRepo | null> => {
   const msgdb = getIncomingMessageRepo();
@@ -101,21 +97,27 @@ export const updateOutgoingMessage = async (
   return await saveOutgoingMessage(msgFromRepo);
 };
 
-export const saveIncomingMessage = async (msg: PrivyMessageInRepo) => {
-  const msgdb = getIncomingMessageRepo();
+const _saveInOrOutgoingMessage = async (repo: any, msg: PrivyMessageInRepo) => {
   const hash = hashMessage(msg);
   msg = { ...msg, hash: hash };
-  await msgdb.put(msg);
+  await repo.put(msg);
   return hash;
-};
+}
 
-export const saveOutgoingMessage = async (msg: PrivyMessageInRepo) => {
-  const msgdb = getOutgoingMessageRepo();
-  const hash = hashMessage(msg);
-  msg = { ...msg, hash: hash };
-  await msgdb.put(msg);
-  return hash;
-};
+export const saveIncomingMessage = async (msg: PrivyMessageInRepo) => _saveInOrOutgoingMessage(getIncomingMessageRepo(), msg);
+
+export const saveOutgoingMessage = async (msg: PrivyMessageInRepo) => _saveInOrOutgoingMessage(getOutgoingMessageRepo(), msg);
+
+const _removeInOrOutgoingMessage = async (repo: any, hash: string) => {
+  const resultSet = repo.get(hash) as PrivyMessageInRepo[];
+  if (!resultSet.length) {
+    return null;
+  }
+  return await repo.del(hash);
+}
+
+export const removeOutgoingMessage = async (hash: string) => _removeInOrOutgoingMessage(getOutgoingMessageRepo(), hash);
+export const removeIncomingMessage = async (hash: string) => _removeInOrOutgoingMessage(getIncomingMessageRepo(), hash);
 
 const hashMessage = (msg: PrivyMessage) => {
   return sha256(`${msg.timestamp}${msg.from}${msg.content}`);
