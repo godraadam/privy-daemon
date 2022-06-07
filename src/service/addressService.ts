@@ -7,8 +7,8 @@ import {
   getWriteKey,
   verifyAddress,
 } from "../repo/connectionManager";
-import { getPublicKeyString, getUserAddress } from "../service/identityService";
-import { publishToTopic, subscribeToTopic } from "../service/ipfsService";
+import { getPublicKeyString, getUserAddress } from "./identityService";
+import { publishToTopic, subscribeToTopic } from "./ipfsService";
 import { Message } from "ipfs-core-types/src/pubsub";
 import {
   CloneRequest,
