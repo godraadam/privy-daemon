@@ -41,9 +41,9 @@ export const getMessagesWith = async (
     (msg) => msg.from == contact.alias
   );
 
-  const otugoinMessages =
+  const outgoingMessages =
     (await getAllOutgoingMessages()) as Array<PrivyMessage>;
-  const messagesToContact = otugoinMessages.filter(
+  const messagesToContact = outgoingMessages.filter(
     (msg) => msg.to == contact.alias
   );
   return messagesFromContact.concat(messagesToContact);
@@ -55,6 +55,15 @@ export const removeMessage = async (hash: string) => {
     removeOutgoingMessage(hash),
   ]);
 };
+
+export const removeAllMessagesWith = async (alias: string) => {
+  const msgs = await getMessagesWith(alias);
+  const hashes = msgs.map((msg) => msg.hash);
+  for await (const hash of hashes) {
+    if (!hash) continue;
+    removeMessage(hash);
+  }
+}
 
 export const sendMessage = async (
   msg: string,

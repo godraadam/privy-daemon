@@ -109,10 +109,12 @@ export const saveIncomingMessage = async (msg: PrivyMessageInRepo) => _saveInOrO
 export const saveOutgoingMessage = async (msg: PrivyMessageInRepo) => _saveInOrOutgoingMessage(getOutgoingMessageRepo(), msg);
 
 const _removeInOrOutgoingMessage = async (repo: any, hash: string) => {
-  const resultSet = repo.get(hash) as PrivyMessageInRepo[];
+  const resultSet = await repo.get(hash) as PrivyMessageInRepo[];
   if (!resultSet.length) {
+    console.info(`Could not delete message with hash ${hash} because it was not found`);
     return null;
   }
+  console.info(`Removing message record with hash ${hash}`);
   return await repo.del(hash);
 }
 

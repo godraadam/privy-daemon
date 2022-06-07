@@ -5,7 +5,7 @@ import {
   getAllOutgoingMessages,
 } from "../../repo/messageRepo";
 import { getContactByAlias } from "../../service/contactService";
-import { getMessagesWith, removeMessage, sendMessage } from "../../service/messageService";
+import { getMessagesWith, removeAllMessagesWith, removeMessage, sendMessage } from "../../service/messageService";
 
 export const messageRouter = Router();
 
@@ -34,11 +34,25 @@ messageRouter.post("/send", async (req, res) => {
   res.sendStatus(StatusCodes.OK);
 });
 
-messageRouter.delete("/rm/", async (req, res) => {
-  const msg = await removeMessage(req.query.hash as string);
+messageRouter.delete("/rm", async (req, res) => {
+  if (!req.body.hash) {
+    res.sendStatus(StatusCodes.BAD_REQUEST);
+    return;
+  }
+  const msg = await removeMessage(req.body.hash);
   if (!msg) {
     res.sendStatus(StatusCodes.NOT_FOUND);
     return;
   }
   res.sendStatus(StatusCodes.OK);
 });
+
+messageRouter.delete("/rm/all-with/:alias", async (req, res) => {
+  const contact = await getContactByAlias(req.params.alias);
+  if (!contact) {
+    res.sendStatus(StatusCodes.NOT_FOUND);
+    return;
+  }
+  removeAllMessagesWith(req.params.alias);
+  res.sendStatus(StatusCodes.OK);
+})
