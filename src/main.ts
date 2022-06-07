@@ -37,7 +37,7 @@ console.logLevel = 2;
 const main = async () => {
   // get boot information
   const type = process.env.NODE_TYPE;
-  const port = process.env.PORT ?? 6131;
+  const port = process.env.PORT ?? '6131';
   const seed = process.env.SEED;
   const pubkey = process.env.PUBKEY;
   const repo = process.env.REPO;
@@ -73,7 +73,7 @@ const main = async () => {
 
   // startup internal ipfs node
   console.info("Starting IPFS node...");
-  await initIpfs(repo);
+  await initIpfs(repo, parseInt(port));
   console.info(
     `IPFS succesfully started with node id ${await getIPFSNodeId()}`
   );
