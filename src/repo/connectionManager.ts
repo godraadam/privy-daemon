@@ -49,12 +49,12 @@ export const cloneIncomingMessageRepo = async (incomingDbAddr: string) => {
 };
 
 export const cloneOutgoingMessageRepo = async (outgoingDbAddr: string) => {
-  console.info("Cloning ourgoing message repo...");
+  console.info("Cloning outgoing message repo...");
 
   _outgoingMessageRepo = await _orbitdb?.docstore(outgoingDbAddr, { indexBy: "hash" });
   _outgoingMessageRepo.load();
   
-  console.info(`outgoing message repo cloned at ${_outgoingMessageRepo.address.toString()}`);
+  console.info(`Outgoing message repo cloned at ${_outgoingMessageRepo.address.toString()}`);
 };
 
 export const getIncomingMessageRepo = () => _incomingMessageRepo;

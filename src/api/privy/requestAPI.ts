@@ -6,12 +6,14 @@ import {
   ProxyRequestResponse,
   ResponseRejected,
 } from "../../model/requestModel";
-import { getContactRepo, getIncomingMessageRepo } from "../../repo/connectionManager";
+import {
+  getContactRepo,
+  getIncomingMessageRepo,
+  getOutgoingMessageRepo,
+} from "../../repo/connectionManager";
 import { isPubKeyTrusted } from "../../service/contactService";
 import {
   getPublicKeyString,
-  getUserAddress,
-  getUserName,
 } from "../../service/identityService";
 import { publishToTopic } from "../../service/ipfsService";
 import {
@@ -20,8 +22,8 @@ import {
   signMessage,
   verifySignature,
 } from "../../util/crypto";
-import axios from "axios";
 import { startProxyNode } from "../../service/proxyService";
+import { getContactRepoAddress, getIncomingMessageRepoAddress, getOutgoingMessageRepoAddress } from "../../service/addressService";
 
 const sendRejectResponse = async (channel: string, reason: string) => {
   const response: ResponseRejected = {
@@ -33,6 +35,7 @@ const sendRejectResponse = async (channel: string, reason: string) => {
 
 export const handleCloneRequest = async (msg: Message) => {
   const body = JSON.parse(msg.data.toString()) as CloneRequest;
+  console.info(`Received clone request from ${body.pubkey}`);
 
   const sendResponse = async (repo: any) => {
     await repo.access.grant("write", body.writeKey);
@@ -45,30 +48,39 @@ export const handleCloneRequest = async (msg: Message) => {
       signature: signMessage(nonce),
       address: encryptMessage(address, body.pubkey),
     };
-    publishToTopic(body.nonce, JSON.stringify(response));
+    await publishToTopic(body.nonce, JSON.stringify(response));
+    console.info("Reponse sent!")
   };
 
   const verified = verifySignature(body.nonce, body.signature, body.pubkey);
   if (!verified) {
-    sendRejectResponse(body.nonce, "Signature verification failed");
+    await sendRejectResponse(body.nonce, "Signature verification failed");
   }
 
   //verify that user with given public key is trusted
   const trusted = await isPubKeyTrusted(body.pubkey);
   if (!trusted) {
-    sendRejectResponse(body.nonce, "Not trusted by receiver");
+    await sendRejectResponse(body.nonce, "Not trusted by receiver");
     return;
   }
 
   switch (body.repo) {
-    case "MESSAGES":
-      sendResponse(getIncomingMessageRepo());
+    case "INCOMING_MESSAGES":
+      console.info(`Sending incoming message repository address ${getIncomingMessageRepoAddress()} for cloning...`)
+      await sendResponse(getIncomingMessageRepo());
+      break;
+    case "OUTGOING_MESSAGES":
+      console.info(`Sending outgoing message repository address ${getOutgoingMessageRepoAddress()} for cloning...`)
+      
+      await sendResponse(getOutgoingMessageRepo());
       break;
     case "CONTACTS":
-      sendResponse(getContactRepo());
+      console.info(`Sending contact repository address ${getContactRepoAddress()} for cloning`)
+      
+      await sendResponse(getContactRepo());
       break;
     default:
-      sendRejectResponse(body.nonce, "Invalid repo name");
+      await sendRejectResponse(body.nonce, "Invalid repo name");
   }
 };
 
@@ -88,7 +100,7 @@ export const handleProxyRequest = async (msg: Message) => {
   // Proxy request accepted
   // Signal the manager to start a new proxy node
   await startProxyNode(body.pubkey);
-  
+
   // Respond to request
   const nonce = generateNonce();
   const response: ProxyRequestResponse = {
@@ -97,5 +109,5 @@ export const handleProxyRequest = async (msg: Message) => {
     nonce: nonce,
     signature: signMessage(nonce),
   };
-  publishToTopic(body.nonce, JSON.stringify(response));
+  await publishToTopic(body.nonce, JSON.stringify(response));
 };
