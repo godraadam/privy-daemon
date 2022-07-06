@@ -11,6 +11,8 @@ import { publishToTopic, subscribeToTopic } from "./ipfsService";
 import { Message } from "ipfs-core-types/src/pubsub";
 import { PrivyError } from "../model/errors";
 import axios from "axios";
+import { getContactByPublicKey } from "./contactService";
+import { saveContact } from "../repo/contactRepo";
 
 export const sendProxyrequest = async (
   proxy_candidate: PrivyContact,
@@ -18,7 +20,7 @@ export const sendProxyrequest = async (
 ) => {
   const _handleResponse = async (msg: Message) => {
     const response = JSON.parse(msg.data.toString()) as ProxyRequestResponse;
-    console.info(`Received response to proxy request: ${response}`);
+    console.info(`Received response to proxy request: ${JSON.stringify(response)}`);
     if (response.status === "accepted") {
       const verified = verifySignature(
         response.nonce,
@@ -28,11 +30,34 @@ export const sendProxyrequest = async (
 
       if (!verified) {
         callback(PrivyError.INVALID_SIGNATURE);
+        return;
       }
-      if (verified) {
-        // start proxying
-        await startProxyNode(response.pubkey);
+      const contact = await getContactByPublicKey(response.pubkey);
+      if (!contact) {
+        callback(PrivyError.NOT_TRUSTED);
+        return;
       }
+      if (!contact.trusted) {
+        callback(PrivyError.NOT_TRUSTED);
+        return;
+      }
+      // contact.proxy = true;
+      // await saveContact(contact);
+      await startProxyNode(response.token, response.pubkey);
+
+      // respond to response with token
+      const token = response.nonce + "|" + signMessage(response.nonce);
+      const renonce = generateNonce();
+      const rerespons: ProxyRequestResponse = {
+        status: "accepted",
+        pubkey: getPublicKeyString(),
+        nonce: renonce,
+        signature: signMessage(renonce),
+        token: token,
+      };
+
+      console.info(`Sending proxy request response to ${response.nonce}`);
+      await publishToTopic(response.nonce, JSON.stringify(rerespons));
     } else {
       callback(PrivyError.REQUEST_REJECTED);
     }
@@ -46,7 +71,7 @@ export const sendProxyrequest = async (
     signature: signature,
   };
 
-  subscribeToTopic(nonce, _handleResponse);
+  await subscribeToTopic(nonce, _handleResponse);
   console.info(
     `Publishing proxy request to ${proxy_candidate.address}/request/proxy...`
   );
@@ -56,10 +81,12 @@ export const sendProxyrequest = async (
   );
 };
 
-export const startProxyNode = async (proxy_pubkey: string) => {
+export const startProxyNode = async (token: string, proxy_pubkey: string) => {
+  console.info(`Sending proxy start request to router...`);
   try {
     const response = await axios.post(
-      `http://127.0.0.1/api/account/${getUserName()}/add-proxy/${proxy_pubkey}`
+      `http://127.0.0.1:6130/api/account/node/add-proxy`,
+      { to: getUserName(), proxy_pubkey: proxy_pubkey, token: token }
     );
     if (response.status != 200) {
       // handle
@@ -70,5 +97,6 @@ export const startProxyNode = async (proxy_pubkey: string) => {
   } catch (error) {
     // handle
     // possibly router is down, save request and retry later
+    console.log(error);
   }
 };

@@ -8,7 +8,7 @@ import {
   getWriteKey,
   verifyAddress,
 } from "../repo/connectionManager";
-import { getPublicKeyString, getUserAddress } from "./identityService";
+import { getNodeType, getPublicKeyString, getToken, getUserAddress } from "./identityService";
 import { publishToTopic, subscribeToTopic } from "./ipfsService";
 import { Message } from "ipfs-core-types/src/pubsub";
 import {
@@ -24,6 +24,7 @@ import {
   verifySignature,
 } from "../util/crypto";
 import { PrivyError } from "../model/errors";
+import { cryptico } from "@daotl/cryptico";
 
 export const fetchIncomingMessageRepoAddrAndClone = async (
   callback: (err?: PrivyError) => void
@@ -52,9 +53,9 @@ const fetchRepoAndClone = async (
   const nonce = generateNonce();
 
   const handleResponse = async (msg: Message) => {
-    console.info("Clone request response received...")
     
     const body = JSON.parse(msg.data.toString()) as CloneRequestResponse;
+    console.info(`Clone request response received...${JSON.stringify(body)}`)
     if (body.status === "accepted") {
       const response = body as CloneRequestResponseSuccess;
       const verified = verifySignature(
@@ -84,6 +85,23 @@ const fetchRepoAndClone = async (
   };
 
   await subscribeToTopic(nonce, handleResponse);
+  
+  // proxy nodes use token instead of signature and a random key for encryption
+  if (getNodeType() === 'proxy') {
+    const request: CloneRequest = {
+      repo: repo,
+      pubkey: getPublicKeyString(),
+      nonce: nonce,
+      token: getToken(),
+      writeKey: getWriteKey(),
+    };
+    console.info(`Publishing clone request to ${getUserAddress() + "/request/clone"}`)
+    await publishToTopic(
+      getUserAddress() + "/request/clone",
+      JSON.stringify(request)
+    );
+    return;
+  }
 
   const signature = signMessage(nonce);
   if (signature) {
@@ -94,6 +112,7 @@ const fetchRepoAndClone = async (
       signature: signature,
       writeKey: getWriteKey(),
     };
+    console.info(`Publishing clone request to ${getUserAddress() + "/request/clone"}`)
     await publishToTopic(
       getUserAddress() + "/request/clone",
       JSON.stringify(request)

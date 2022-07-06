@@ -2,8 +2,9 @@ export interface CloneRequest {
   repo: string;
   pubkey: string;
   nonce: string;
-  signature: string;
+  signature?: string;
   writeKey: string;
+  token?: string;
 }
 
 export interface CloneRequestResponseSuccess {
@@ -30,6 +31,7 @@ export interface ProxyRequestResponseSuccess {
   pubkey: string;
   nonce: string;
   signature: string;
+  token: string;
 }
 
 export type CloneRequestResponse =
