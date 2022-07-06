@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { removeAccountData } from "../../service/accountService";
 import {
   getPublicKeyString,
   getUserAddress,
@@ -12,3 +13,8 @@ accountRouter.get("/", async (_, res) => {
     address: getUserAddress(),
   });
 });
+
+accountRouter.post("/remove", async(req, res) => {
+  await removeAccountData();
+  res.status(200);
+})

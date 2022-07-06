@@ -67,6 +67,10 @@ export const contactSetTrusted = async (alias: string, trusted: boolean) => {
 export const isPubKeyTrusted = async (pubkey: string) => {
   const contact = await getContactByPublicKey(pubkey);
   if (!contact) {
+    // trust the user itself
+    if (pubkey === getPublicKeyString()) {
+      return true;
+    }
     return false;
   }
   return contact.trusted;
